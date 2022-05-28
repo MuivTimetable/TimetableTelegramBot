@@ -44,28 +44,31 @@ def take_login(message):
 def take_password(message):
     try:
         user.password = message.text
-        mess = bot.send_message(message.chat.id, 'Подтвердите авторизацию')
+        m = 'Подтвердите авторизацию'
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
         btn1 = types.KeyboardButton('Да')
         btn2 = types.KeyboardButton('Нет')
         markup.add(btn1, btn2)
-        bot.send_message(message.chat.id, mess, parse_mode='html', reply_markup=markup)
+        mess = bot.send_message(message.chat.id, m,  reply_markup=markup)
         bot.register_next_step_handler(mess, auto)
-        print(user.login)
     except Exception as e:
         bot.reply_to(message, 'Упс! Пароль не принят! Попробуй еще раз!')
 
 
 def auto(message):
-    print(user.login, user.password)
-    data = {"login": user.login, "password": user.password}
-    js_auto = json.dumps(data)
-    api = 'https://api.muiv-timetable.cf/api/'
-    groups_list = requests.post(api+"auto", data=js_auto)
-    print(groups_list.text)
-    print(groups_list)
-    print(js_auto)
-
+    try:
+        if message.text == "Да":
+            print(user.login, user.password)
+            data = {"login": user.login, "password": user.password}
+            js_auto = json.dumps(data, indent=4,)
+            api = 'https://api.muiv-timetable.cf/api/'
+            #Json или dаta??
+            groups_list = requests.post(api+"auto", json=js_auto)
+            print(groups_list)
+            print(js_auto)
+            bot.send_message(message.chat.id, 'Пытаюсь авторизировать!')
+    except Exception as e:
+        bot.reply_to(message, 'Упс! Регистрация провалилась')
 
 file = open('shedulerData02.05.22_08.05.22.json', encoding='utf-8')
 d = file.read()
