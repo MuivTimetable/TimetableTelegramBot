@@ -15,6 +15,23 @@ class User:
 
 user = User()
 
+
+class Comment:
+    comm = None
+    id = None
+    token = None
+
+
+comment = Comment()
+
+
+class Totalizer():
+    id = None
+    token = None
+    moreOrLess = True
+
+tot = Totalizer()
+
 api = 'https://api.muiv-timetable.cf/api/'
 
 
@@ -24,7 +41,9 @@ def start(message):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
     btn1 = types.KeyboardButton('/Авторизация')
     btn2 = types.KeyboardButton('/Расписание')
-    markup.add(btn1, btn2)
+    btn3 = types.KeyboardButton('/Комментарий')
+    btn4 = types.KeyboardButton('/Отметиться')
+    markup.add(btn1, btn2, btn3, btn4)
     bot.send_message(message.chat.id, mess, parse_mode='html', reply_markup=markup)
 
 
@@ -81,7 +100,6 @@ def get_sched(message):
         groups_json = groups.json()
         for item in groups_json:
             a = groups_json['groups']
-
             leight = len(a)
             i = 0
             while i < leight:
@@ -100,6 +118,74 @@ def get_sched(message):
     else:
         m = "Я тебя не понимаю"
         bot.send_message(message.chat.id, m)
+
+
+@bot.message_handler(commands=['Комментарий'])
+def comment(message):
+    m = "Введите комментарий"
+    mess = bot.send_message(message.chat.id, m)
+    bot.register_next_step_handler(mess, take_comment)
+
+
+def take_comment(message):
+    comment.comm = message.text
+    m = "Введите ID занятия"
+    mess = bot.send_message(message.chat.id, m)
+    bot.register_next_step_handler(mess, take_id_comm)
+
+
+def take_id_comm(message):
+    comment.id = message.text
+    m = "Введите токен"
+    mess = bot.send_message(message.chat.id, m)
+    bot.register_next_step_handler(mess, take_token)
+
+
+def take_token(message):
+    comment.token = message.text
+    m = "Оставляю комментарий"
+    mess = bot.send_message(message.chat.id, m)
+    data = {"comment": comment.comm,"scheduler_id": comment.id, "token": comment.token}
+    comm = requests.post(api+"comment", json=data)
+
+
+@bot.message_handler(commands=['Отметиться'])
+def Totalizer(message):
+    m = "Введите id занятия"
+    mess = bot.send_message(message.chat.id, m)
+    bot.register_next_step_handler(mess, take_id_total)
+
+
+def take_id_total(message):
+    tot.id = message.text
+
+    m = "Введите токен"
+    mess = bot.send_message(message.chat.id, m)
+    bot.register_next_step_handler(mess, take_token_total)
+
+
+def take_token_total(message):
+    tot.token = message.text
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+    btn1 = types.KeyboardButton('Приду')
+    btn2 = types.KeyboardButton('Не приду')
+    markup.add(btn1, btn2,)
+    m = "Придете на нее?"
+    mess = bot.send_message(message.chat.id, m, parse_mode='html', reply_markup=markup)
+    bot.register_next_step_handler(mess, totalize)
+
+
+def totalize(message):
+    if message.text == "Приду":
+        tot.moreOrLess = True
+    elif message.text == "Не приду":
+        tot.moreOrLess = False
+    m = "Принято, отмечаю"
+    bot.send_message(message.chat.id, m)
+    data = {"moreOrLess":tot.moreOrLess,"scheduler_id":tot.id,"token":tot.token}
+    totalizer = requests.post(api + "totalizer", json=data)
+    print(totalizer)
+    print(totalizer.text)
 
 
 @bot.message_handler(commands=['Авторизация'])
@@ -131,7 +217,7 @@ def take_password(message):
     except Exception as e:
         bot.reply_to(message, 'Упс! Пароль не принят! Попробуй еще раз!')
 
-#
+
 def auto(message):
     try:
         if message.text == "Да":
@@ -145,7 +231,7 @@ def auto(message):
             m = "Если вы регистрируетесь впервые на этом аккаунте, Проверьте почту - вам пришло письмо с кодом подтверждения. Введите команду \"Верификация\""
             bot.send_message(message.chat.id, m)
     except Exception as e:
-        bot.reply_to(message, 'Упс! Регистрация провалилась')
+        bot.send_message(message.chat.id, 'Упс! Регистрация провалилась')
 
 
 
