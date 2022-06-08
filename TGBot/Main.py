@@ -2,6 +2,7 @@ import telebot
 from telebot import types
 import json
 import requests
+import re
 
 token = '5309566375:AAH0VgTM1-d8e0FQOlUZlUZIafRwSmxn1Nc'
 bot = telebot.TeleBot(token)
@@ -26,11 +27,22 @@ comment = Comment()
 
 
 class Totalizer():
-    id = None
+    id = []
     token = None
     moreOrLess = True
 
+
 tot = Totalizer()
+
+
+class Verify():
+    token = None
+    email_code = None
+    user_identity = None
+
+
+verify = Verify()
+
 
 api = 'https://api.muiv-timetable.cf/api/'
 
@@ -61,7 +73,7 @@ def sched(message):
 def get_sched(message):
     if message.text == 'Мое расписание':
         data = {"token": "5447544750485050324950585257585250328077", "group_id": None}
-        sched  = requests.post(api + "scheduler", json = data)
+        sched = requests.post(api + "scheduler", json = data)
         sched_json = sched.json()
         for item in sched_json:
             #Не полностью работает. ДОБАВИТЬ ДРУГОЙ ДЕНЬ
@@ -151,21 +163,22 @@ def take_token(message):
 
 @bot.message_handler(commands=['Отметиться'])
 def Totalizer(message):
-    m = "Введите id занятия"
+    m = "Введите id занятия, Например: \"1 и 734 и 49\" (вплоть до пяти занятий)"
     mess = bot.send_message(message.chat.id, m)
     bot.register_next_step_handler(mess, take_id_total)
 
 
 def take_id_total(message):
-    tot.id = message.text
-
+    nums = re.split(' и ', message.text, maxsplit=5)
+    tot.id = nums
+    print(tot.id)
     m = "Введите токен"
     mess = bot.send_message(message.chat.id, m)
     bot.register_next_step_handler(mess, take_token_total)
 
 
 def take_token_total(message):
-    tot.token = message.text
+    tot.token = str(message.text)
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
     btn1 = types.KeyboardButton('Приду')
     btn2 = types.KeyboardButton('Не приду')
@@ -180,12 +193,14 @@ def totalize(message):
         tot.moreOrLess = True
     elif message.text == "Не приду":
         tot.moreOrLess = False
-    m = "Принято, отмечаю"
-    bot.send_message(message.chat.id, m)
-    data = {"moreOrLess":tot.moreOrLess,"scheduler_id":tot.id,"token":tot.token}
+    data = {"moreOrLess": tot.moreOrLess, "scheduler_id": tot.id, "token": tot.token}
     totalizer = requests.post(api + "totalizer", json=data)
-    print(totalizer)
-    print(totalizer.text)
+    if totalizer:
+        m = "Принято, отмечаю"
+        bot.send_message(message.chat.id, m)
+    else:
+        m = "Что-то пошло не так!"
+        bot.send_message(message.chat.id, m)
 
 
 @bot.message_handler(commands=['Авторизация'])
@@ -221,22 +236,57 @@ def take_password(message):
 def auto(message):
     try:
         if message.text == "Да":
-            user.identity = message.from_user.id
+            user.identity = str(message.from_user.id)
             print(user.login, user.password, user.identity)
             data = {"login": user.login, "password": user.password, "userIdentity": user.identity}
             auto = requests.post(api+"auto", json=data)
+            token_json = auto.json()
+            token = token_json['identityToken']
             print(auto)
             print(auto.text)
-            bot.send_message(message.chat.id, 'Пытаюсь авторизировать!')
-            m = "Если вы регистрируетесь впервые на этом аккаунте, Проверьте почту - вам пришло письмо с кодом подтверждения. Введите команду \"Верификация\""
-            bot.send_message(message.chat.id, m)
+            if auto:
+                markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+                btn1 = types.KeyboardButton('/Верификация')
+                m = "Ваш токен " + token
+                bot.send_message(message.chat.id, m)
+                if token_json['answerOption'] == 2:
+                    m1 = 'Вы авторизованы! Если Ваш токен оканчивается на \"p\", Проверьте почту - вам пришло письмо с кодом подтверждения. Пройдите верификацию.'
+                    bot.send_message(message.chat.id, m1, reply_markup=markup)
+            else:
+                bot.send_message(message.chat.id, "Авторизация провалилась!")
     except Exception as e:
         bot.send_message(message.chat.id, 'Упс! Регистрация провалилась')
 
 
+@bot.message_handler(commands=['Верификация'])
+def verify(message):
+    m = "Введите ваш Пре-токен. Он онканчивается на \"p\""
+    mess = bot.send_message(message.chat.id, m)
+    bot.register_next_step_handler(mess, take_verify_token)
 
 
+def take_verify_token(message):
+    verify.token = message.text
+    m = "Введите email-код"
+    mess = bot.send_message(message.chat.id, m)
+    bot.register_next_step_handler(mess, take_verify_code)
 
+
+def take_verify_code(message):
+    verify.email_code = message.text
+    verify.user_identity = str(message.from_user.id)
+    data = {"emailAutoToken": verify.token, "emailCode": verify.email_code, "userIdentity": verify.user_identity}
+    verifi = requests.post(api + "verify", json=data)
+    token_json = verifi.json()
+    print(verifi)
+    print(token_json)
+    if token_json['answerOption']:
+        token = token_json['token']
+        m = "Верификация прошла успешно! Ваш токен:" + str(token)
+        bot.send_message(message.chat.id, m)
+    else:
+        m = "Верификация провалилась!"
+        bot.send_message(message.chat.id, m)
 
 
 # @bot.message_handler(commands=['text'])
