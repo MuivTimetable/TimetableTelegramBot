@@ -72,43 +72,13 @@ def sched(message):
 
 def get_sched(message):
     if message.text == 'Мое расписание':
-        data = {"token": "5447544750485050324950585257585250328077", "group_id": None}
-        sched = requests.post(api + "scheduler", json = data)
-        sched_json = sched.json()
-        for item in sched_json:
-            #Не полностью работает. ДОБАВИТЬ ДРУГОЙ ДЕНЬ
-            sheld = sched_json['timetables'][0]["schedulers"]
-            leight = len(sched_json['timetables'][0]["schedulers"])
-            i = 0
-            work_date_name = (sched_json['timetables'][0]["work_Date_Name"])
-            day = (sched_json['timetables'][0]["dayOfTheWeek"])
-            day_text = ('Расписание на ' + work_date_name + ', ' + str(day) + ': \n')
-            bot.send_message(message.chat.id, " " + day_text)
-            while i < leight:
-                tutor = (sheld[i]["tutor"])
-                para_name = (sheld[i]["area"])
-                workType = (sheld[i]["workType"])
-                place = (sheld[i]["place"])
-                workStart = (sheld[i]["workStart"])
-                workEnd = (sheld[i]["workEnd"])
-                comment = (sheld[i]["comment"])
-                totalizer = (sheld[i]["totalizer"])
-                i = i + 1
-                sheld_text = (' 🕒 : ' + str(workStart) + ' ' + str(workEnd) +
-                              '\n 🗓️ : ' + para_name +
-                              '\n 📘 : ' + workType +
-                              '\n ⛺ : ' + str(place) +
-                              '\n 🧑‍🏫 : ' + tutor +
-                              '\n 📝 : ' + str(comment) +
-                              '\n 🧑‍💻 : ' + str(totalizer))
-                bot.send_message(message.chat.id, " " + sheld_text)
-
-            break
-#Не работает
+        m = "Введите токен"
+        mess = bot.send_message(message.chat.id, m)
+        bot.register_next_step_handler(mess, give_sched)
     elif message.text == 'Расписание другой группы':
         m = "Введите группу"
         bot.send_message(message.chat.id, m)
-        groups = requests.get(api+"groups")
+        groups = requests.get(api + "groups")
         groups_json = groups.json()
         for item in groups_json:
             a = groups_json['groups']
@@ -130,6 +100,51 @@ def get_sched(message):
     else:
         m = "Я тебя не понимаю"
         bot.send_message(message.chat.id, m)
+
+
+def give_sched(message):
+    token = message.text
+    # data = {"token": token, "group_id": None}
+    #     # sched = requests.post(api + "scheduler", json=data)
+    #     # sched_json = sched.json()
+    file = open('shedulerData02.05.22_08.05.22.json', encoding='utf-8')
+    d = file.read()
+    sched_json = json.loads(d)
+    for item in sched_json:
+        a = 0
+        days_leigth = len(sched_json['timetables'])
+        while a < days_leigth:
+            sched = sched_json['timetables'][a]["schedulers"]
+            leight = len(sched_json['timetables'][a]["schedulers"])
+            work_date_name = (sched_json['timetables'][a]["work_Date_Name"])
+            day = (sched_json['timetables'][a]["dayOfTheWeek"])
+            day_text = ('Расписание на ' + work_date_name + ', ' + str(day) + ': \n')
+            bot.send_message(message.chat.id, " " + day_text)
+            a +=1
+            i = 0
+            while i < leight:
+                tutor = (sched[i]["tutor"])
+                para_name = (sched[i]["area"])
+                workType = (sched[i]["workType"])
+                place = (sched[i]["place"])
+                workStart = (sched[i]["workStart"])
+                workEnd = (sched[i]["workEnd"])
+                comment = (sched[i]["comment"])
+                totalizer = (sched[i]["totalizer"])
+                id = (sched[i]["scheduler_id"])
+                sched_text = (' 🕒 : ' + str(workStart) + ' ' + str(workEnd) +
+                                  '\n 🗓️ : ' + para_name +
+                                  '\n 📘 : ' + workType +
+                                  '\n ⛺ : ' + str(place) +
+                                  '\n 🧑‍🏫 : ' + tutor +
+                                  '\n 📝 : ' + str(comment) +
+                                  '\n 🧑‍💻 : ' + str(totalizer) +
+                                  '\n id занятия: ' + str(id))
+                i = i + 1
+                bot.send_message(message.chat.id, '' + sched_text)
+        break
+
+    file.close()
 
 
 @bot.message_handler(commands=['Комментарий'])
