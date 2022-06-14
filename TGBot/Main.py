@@ -157,7 +157,6 @@ tot = Totalizer()
 api = 'https://api.muiv-timetable.cf/api/'
 
 
-<<<<<<< HEAD
 def print_schedluer(sched_json, message):
     for item in sched_json:
         a = 0
@@ -257,25 +256,11 @@ def start(message):
     btn2 = types.KeyboardButton('/scheduler')
     btn3 = types.KeyboardButton('/comment')
     btn4 = types.KeyboardButton('/check_in')
-=======
-@bot.message_handler(commands=['start'])
-def start(message):
-    mess = f'Привет, {message.from_user.first_name} '
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
-    btn1 = types.KeyboardButton('/Авторизация')
-    btn2 = types.KeyboardButton('/Расписание')
-    btn3 = types.KeyboardButton('/Комментарий')
-    btn4 = types.KeyboardButton('/Отметиться')
->>>>>>> parent of 0865131 (Расписание по токену)
     markup.add(btn1, btn2, btn3, btn4)
     bot.send_message(message.chat.id, mess, parse_mode='html', reply_markup=markup)
 
 
-<<<<<<< HEAD
 @bot.message_handler(commands=['scheduler'])
-=======
-@bot.message_handler(commands=['Расписание'])
->>>>>>> parent of 0865131 (Расписание по токену)
 def sched(message):
     m = "Какое расписание вы хотите получить?"
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
@@ -287,7 +272,6 @@ def sched(message):
 
 
 def get_sched(message):
-<<<<<<< HEAD
     try:
         if message.text == 'Мое расписание':
             token = user.token
@@ -313,8 +297,6 @@ def get_sched(message):
             bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
     except:
         bot.send_message(message.chat.id, "Что-то пошло не так! Пройдите авторизацию повторно")
-
-
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -600,72 +582,8 @@ def callback(call):
         mess = call
         groups1(mess)
 
-
+# КОММЕНТ И ОТМЕТКУ ИНЛАЙН КНОПКАМИ!!!!!
 @bot.message_handler(commands=['comment'])
-=======
-    if message.text == 'Мое расписание':
-        data = {"token": "5447544750485050324950585257585250328077", "group_id": None}
-        sched = requests.post(api + "scheduler", json = data)
-        sched_json = sched.json()
-        for item in sched_json:
-            #Не полностью работает. ДОБАВИТЬ ДРУГОЙ ДЕНЬ
-            sheld = sched_json['timetables'][0]["schedulers"]
-            leight = len(sched_json['timetables'][0]["schedulers"])
-            i = 0
-            work_date_name = (sched_json['timetables'][0]["work_Date_Name"])
-            day = (sched_json['timetables'][0]["dayOfTheWeek"])
-            day_text = ('Расписание на ' + work_date_name + ', ' + str(day) + ': \n')
-            bot.send_message(message.chat.id, " " + day_text)
-            while i < leight:
-                tutor = (sheld[i]["tutor"])
-                para_name = (sheld[i]["area"])
-                workType = (sheld[i]["workType"])
-                place = (sheld[i]["place"])
-                workStart = (sheld[i]["workStart"])
-                workEnd = (sheld[i]["workEnd"])
-                comment = (sheld[i]["comment"])
-                totalizer = (sheld[i]["totalizer"])
-                i = i + 1
-                sheld_text = (' 🕒 : ' + str(workStart) + ' ' + str(workEnd) +
-                              '\n 🗓️ : ' + para_name +
-                              '\n 📘 : ' + workType +
-                              '\n ⛺ : ' + str(place) +
-                              '\n 🧑‍🏫 : ' + tutor +
-                              '\n 📝 : ' + str(comment) +
-                              '\n 🧑‍💻 : ' + str(totalizer))
-                bot.send_message(message.chat.id, " " + sheld_text)
-
-            break
-#Не работает
-    elif message.text == 'Расписание другой группы':
-        m = "Введите группу"
-        bot.send_message(message.chat.id, m)
-        groups = requests.get(api+"groups")
-        groups_json = groups.json()
-        for item in groups_json:
-            a = groups_json['groups']
-            leight = len(a)
-            i = 0
-            while i < leight:
-                id = str(a[i]['group_id'])
-                name = a[i]['group_name']
-                print("id=" + id + "group name =" + name)
-                i = i + 1
-            break
-        # for item in groups_json:
-        #     a = groups_json['groups'][0]
-        #     print(a)
-        # group = groups_json['groups'][0]
-        # print(group)
-
-        print('fd')
-    else:
-        m = "Я тебя не понимаю"
-        bot.send_message(message.chat.id, m)
-
-
-@bot.message_handler(commands=['Комментарий'])
->>>>>>> parent of 0865131 (Расписание по токену)
 def comment(message):
     m = "Введите комментарий"
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
@@ -698,8 +616,22 @@ def take_id_comm(message):
             markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
             btn1 = types.KeyboardButton('Отмена')
             markup.add(btn1)
-            comment.id = message.text
             comment.token = user.token
+            # data = {"token": comment.token, "group_id": None}
+            # sched = requests.post(api + "scheduler", json=data)
+            # sched_json = sched.json()
+            # a = 0
+            # days_leigth = len(sched_json['timetables'])
+            # while a < days_leigth:
+            #     sched = sched_json['timetables'][a]["schedulers"]
+            #     leight = len(sched_json['timetables'][a]["schedulers"])
+            #     a += 1
+            #     i = 0
+            #     if (message.text == sched_json['timetables'][a]["schedulers"][i]['area']):
+            #         while i < leight:
+            #             comm_id = (sched[i]["scheduler_id"])
+            # comment.id = comm_id
+            comment.id = message.text
             data = {"comment": comment.comm, "scheduler_id": comment.id, "token": comment.token}
             comm = requests.post(api + "comment", json=data)
             comm_json = comm.json()
@@ -712,6 +644,7 @@ def take_id_comm(message):
                     bot.send_message(message.chat.id, m)
     except:
         bot.send_message(message.chat.id, "Что-то пошло не так! Пройдите авторизацию повторно")
+
 
 @bot.message_handler(commands=['check_in'])
 def Totalizer(message):
