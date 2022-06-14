@@ -17,6 +17,123 @@ class User:
 user = User()
 
 
+@bot.message_handler(commands=['token'])
+def autorization(message):
+    mess = 'Введите логин от Личного кабинета. Твое сообщение удалится, чтоб никто его не прочитал '
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+    btn1 = types.KeyboardButton('Отмена')
+    markup.add(btn1)
+    m = bot.send_message(message.chat.id, mess, reply_markup=markup)
+    bot.register_next_step_handler(m, take_login)
+
+
+def take_login(message):
+    if message.text == "Отмена":
+        bot.send_message(message.chat.id, "Отменил! Введите команду для продолджения")
+        bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
+    else:
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+        btn1 = types.KeyboardButton('Отмена')
+        markup.add(btn1)
+        user.login = message.text
+        bot.delete_message(message.chat.id, message.id)
+        mess = bot.send_message(message.chat.id,
+                                'Введите пароль от Личного кабинета. Твое сообщение удалится, чтоб никто его не прочитал',
+                                reply_markup=markup)
+        bot.register_next_step_handler(mess, take_password)
+
+
+def take_password(message):
+    if message.text == "Отмена":
+        bot.send_message(message.chat.id, "Отменил! Введите команду для продолджения")
+        bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
+    else:
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+        btn1 = types.KeyboardButton('Отмена')
+        markup.add(btn1)
+        user.password = message.text
+        bot.delete_message(message.chat.id, message.id)
+        m = 'Подтвердите авторизацию'
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+        btn1 = types.KeyboardButton('Да')
+        btn2 = types.KeyboardButton('Нет')
+        markup.add(btn1, btn2)
+        mess = bot.send_message(message.chat.id, m, reply_markup=markup)
+        bot.register_next_step_handler(mess, auto)
+
+
+def auto(message):
+    if message.text == "Нет":
+        bot.send_message(message.chat.id, "Отменил! Введите команду для продолджения")
+        bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
+    else:
+        if message.text == "Да":
+            user.identity = str(message.from_user.id)
+            data = {"login": user.login, "password": user.password, "userIdentity": user.identity}
+            auto = requests.post(api + "auto", json=data)
+            if auto:
+                token_json = auto.json()
+                token = token_json['identityToken']
+                user.token = token
+                if token != None:
+                    m = "Авторизация завершена!"
+                    bot.send_message(message.chat.id, m)
+                if token_json['autoAnswerOption'] == 2:
+                    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+                    btn1 = types.KeyboardButton('/verification')
+                    markup.add(btn1)
+                    m1 = 'Вы авторизованы! Если вы впервые авторизируетесь с этого аккаунта, роверьте почту - вам пришло письмо ' \
+                         'с кодом подтверждения. Пройдите верификацию. '
+                    bot.send_message(message.chat.id, m1, reply_markup=markup)
+                if token_json['autoAnswerOption'] == 1:
+                    m2 = 'Неверный логин или пароль!'
+                    bot.send_message(message.chat.id, m2)
+
+class Verify():
+    token = None
+    email_code = None
+    user_identity = None
+
+
+verify = Verify()
+
+
+@bot.message_handler(commands=['verification'])
+def verify(message):
+    try:
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+        btn1 = types.KeyboardButton('Отмена')
+        markup.add(btn1)
+        verify.token = user.token
+        m = "Введите email-код"
+        mess = bot.send_message(message.chat.id, m, reply_markup=markup)
+        bot.register_next_step_handler(mess, take_verify_code)
+    except:
+        bot.send_message(message.chat.id, "Что-то пошло не так! Пройдите авторизацию повторно")
+
+def take_verify_code(message):
+    if message.text == "Отмена":
+        bot.send_message(message.chat.id, "Отменил! Введите команду для продолджения")
+        bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
+    else:
+        verify.email_code = message.text
+        verify.user_identity = str(message.from_user.id)
+        data = {"emailAutoToken": verify.token, "emailCode": verify.email_code, "userIdentity": verify.user_identity}
+        verifi = requests.post(api + "verify", json=data)
+        token_json = verifi.json()
+        if verifi:
+            if token_json['verifyAnswerOption']:
+                token = token_json['token']
+                m = "Верификация прошла успешно! Ваш токен:" + str(token)
+                bot.send_message(message.chat.id, m)
+            else:
+                m = "Верификация провалилась! Проверьте правильность ввода!"
+                bot.send_message(message.chat.id, m)
+        else:
+            m = "Возможно, вы ввели что-то не то! Попробуйте заново!"
+            bot.send_message(message.chat.id, m)
+
+
 class Comment:
     comm = None
     id = None
@@ -35,13 +152,7 @@ class Totalizer():
 tot = Totalizer()
 
 
-class Verify():
-    token = None
-    email_code = None
-    user_identity = None
 
-
-verify = Verify()
 
 api = 'https://api.muiv-timetable.cf/api/'
 
@@ -136,9 +247,9 @@ def re_call(call, year, group_name):
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    mess = f'Привет, {message.from_user.first_name}! Я помогу тебе найти твое расписание. Если ты здесь впервые,' \
-           f' тебе понадобится токен. Чтобы получить его - пройди авторизацию. Ты также можешь отметиться на занятии,' \
-           f' однако тебе нужен будет Id занятия - найди его в расписание . Если ты староста группы, ты можешь ' \
+    mess = f'Привет, {message.from_user.first_name}! Я помогу тебе найти твое расписание. Если ты здесь впервые' \
+           f' - пройди авторизацию. Ты также можешь отметиться на занятии,' \
+           f' однако тебе нужен будет Id занятия - найди его в расписании . Если ты староста группы, ты можешь ' \
            f'оставить комментарий к занятию.  '
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
     btn1 = types.KeyboardButton('/token')
@@ -161,36 +272,33 @@ def sched(message):
 
 
 def get_sched(message):
-    if message.text == 'Мое расписание':
-        m = "Введите токен"
-        mess = bot.send_message(message.chat.id, m)
-        bot.register_next_step_handler(mess, give_sched)
-    elif message.text == 'Расписание другой группы':
-        markup = types.InlineKeyboardMarkup(row_width=1)
-        btn1 = types.InlineKeyboardButton("5 курс", callback_data="2017")
-        btn2 = types.InlineKeyboardButton("4 курс", callback_data="2018")
-        btn3 = types.InlineKeyboardButton("3 курс", callback_data="2019")
-        btn4 = types.InlineKeyboardButton("2 курс", callback_data="2020")
-        btn5 = types.InlineKeyboardButton("1 курс", callback_data="2021")
-        markup.add(btn1, btn2, btn3, btn4, btn5)
-        m = "Выберите курс"
-        bot.send_message(message.chat.id, m, reply_markup=markup)
-    else:
-        m = "Я тебя не понимаю"
-        bot.send_message(message.chat.id, m)
-        bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
-
-
-def give_sched(message):
     try:
-        token = message.text
-        data = {"token": token, "group_id": None}
-        sched = requests.post(api + "scheduler", json=data)
-        sched_json = sched.json()
-        print_schedluer(sched_json=sched_json, message=message)
+        if message.text == 'Мое расписание':
+            token = user.token
+            data = {"token": token, "group_id": None}
+            sched = requests.post(api + "scheduler", json=data)
+            sched_json = sched.json()
+            print_schedluer(sched_json=sched_json, message=message)
+            bot.send_message(message.chat.id, "Что-то пошло не так! Проверьте логин")
+            bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
+        elif message.text == 'Расписание другой группы':
+            markup = types.InlineKeyboardMarkup(row_width=1)
+            btn1 = types.InlineKeyboardButton("5 курс", callback_data="2017")
+            btn2 = types.InlineKeyboardButton("4 курс", callback_data="2018")
+            btn3 = types.InlineKeyboardButton("3 курс", callback_data="2019")
+            btn4 = types.InlineKeyboardButton("2 курс", callback_data="2020")
+            btn5 = types.InlineKeyboardButton("1 курс", callback_data="2021")
+            markup.add(btn1, btn2, btn3, btn4, btn5)
+            m = "Выберите курс"
+            bot.send_message(message.chat.id, m, reply_markup=markup)
+        else:
+            m = "Я тебя не понимаю"
+            bot.send_message(message.chat.id, m)
+            bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
     except:
-        bot.send_message(message.chat.id, "Что-то пошло не так! Проверьте логин")
-        bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
+        bot.send_message(message.chat.id, "Что-то пошло не так! Пройдите авторизацию повторно")
+
+
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -502,36 +610,28 @@ def take_comment(message):
 
 
 def take_id_comm(message):
-    if message.text == "Отмена":
-        bot.send_message(message.chat.id, "Отменил! Введите команду для продолджения")
-        bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
-    else:
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
-        btn1 = types.KeyboardButton('Отмена')
-        markup.add(btn1)
-        comment.id = message.text
-        m = "Введите токен"
-        mess = bot.send_message(message.chat.id, m, reply_markup=markup)
-        bot.register_next_step_handler(mess, take_token)
-
-
-def take_token(message):
-    if message.text == "Отмена":
-        bot.send_message(message.chat.id, "Отменил! Введите команду для продолджения")
-        bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
-    else:
-        comment.token = message.text
-        data = {"comment": comment.comm, "scheduler_id": comment.id, "token": comment.token}
-        comm = requests.post(api + "comment", json=data)
-        comm_json = comm.json()
-        if comm:
-            if comm_json["commentAnswerOption"]:
-                m = "Комментарий оставлен!"
-                bot.send_message(message.chat.id, m)
-            if not comm_json["commentAnswerOption"]:
-                m = comm_json['commentAnswerInfo']
-                bot.send_message(message.chat.id, m)
-
+    try:
+        if message.text == "Отмена":
+            bot.send_message(message.chat.id, "Отменил! Введите команду для продолджения")
+            bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
+        else:
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+            btn1 = types.KeyboardButton('Отмена')
+            markup.add(btn1)
+            comment.id = message.text
+            comment.token = user.token
+            data = {"comment": comment.comm, "scheduler_id": comment.id, "token": comment.token}
+            comm = requests.post(api + "comment", json=data)
+            comm_json = comm.json()
+            if comm:
+                if comm_json["commentAnswerOption"]:
+                    m = "Комментарий оставлен!"
+                    bot.send_message(message.chat.id, m)
+                if not comm_json["commentAnswerOption"]:
+                    m = comm_json['commentAnswerInfo']
+                    bot.send_message(message.chat.id, m)
+    except:
+        bot.send_message(message.chat.id, "Что-то пошло не так! Пройдите авторизацию повторно")
 
 @bot.message_handler(commands=['check_in'])
 def Totalizer(message):
@@ -548,30 +648,23 @@ def take_id_total(message):
         bot.send_message(message.chat.id, "Отменил! Введите команду для продолджения")
         bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
     else:
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
-        btn1 = types.KeyboardButton('Отмена')
-        markup.add(btn1)
-        nums = re.split(' и ', message.text, maxsplit=5)
-        tot.id = nums
-        m = "Введите токен"
-        mess = bot.send_message(message.chat.id, m, reply_markup=markup)
-        bot.register_next_step_handler(mess, take_token_total)
-
-
-def take_token_total(message):
-    if message.text == "Отмена":
-        bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
-    else:
-        tot.token = str(message.text)
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
-        btn1 = types.KeyboardButton('Приду')
-        btn2 = types.KeyboardButton('Не приду')
-        btn3 = types.KeyboardButton('Отмена')
-        markup.add(btn1, btn2).add(btn3)
-        m = "Придете на нее?"
-        mess = bot.send_message(message.chat.id, m, parse_mode='html', reply_markup=markup)
-        bot.register_next_step_handler(mess, totalize)
-
+        try:
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+            btn1 = types.KeyboardButton('Отмена')
+            markup.add(btn1)
+            nums = re.split(' и ', message.text, maxsplit=5)
+            tot.id = nums
+            tot.token = user.token
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+            btn1 = types.KeyboardButton('Приду')
+            btn2 = types.KeyboardButton('Не приду')
+            btn3 = types.KeyboardButton('Отмена')
+            markup.add(btn1, btn2).add(btn3)
+            m = "Придете на нее?"
+            mess = bot.send_message(message.chat.id, m, parse_mode='html', reply_markup=markup)
+            bot.register_next_step_handler(mess, totalize)
+        except:
+            bot.send_message(message.chat.id,  "Что-то пошло не так! Пройдите авторизацию повторно")
 
 def totalize(message):
     if message.text == "Отмена":
@@ -593,124 +686,8 @@ def totalize(message):
             bot.send_message(message.chat.id, m)
 
 
-@bot.message_handler(commands=['token'])
-def autorization(message):
-    mess = 'Введите логин от Личного кабинета. Твое сообщение удалится, чтоб никто его не прочитал '
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
-    btn1 = types.KeyboardButton('Отмена')
-    markup.add(btn1)
-    m = bot.send_message(message.chat.id, mess, reply_markup=markup)
-    bot.register_next_step_handler(m, take_login)
 
 
-def take_login(message):
-    if message.text == "Отмена":
-        bot.send_message(message.chat.id, "Отменил! Введите команду для продолджения")
-        bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
-    else:
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
-        btn1 = types.KeyboardButton('Отмена')
-        markup.add(btn1)
-        user.login = message.text
-        bot.delete_message(message.chat.id, message.id)
-        mess = bot.send_message(message.chat.id,
-                                'Введите пароль от Личного кабинета. Твое сообщение удалится, чтоб никто его не прочитал',
-                                reply_markup=markup)
-        bot.register_next_step_handler(mess, take_password)
-
-
-def take_password(message):
-    if message.text == "Отмена":
-        bot.send_message(message.chat.id, "Отменил! Введите команду для продолджения")
-        bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
-    else:
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
-        btn1 = types.KeyboardButton('Отмена')
-        markup.add(btn1)
-        user.password = message.text
-        bot.delete_message(message.chat.id, message.id)
-        m = 'Подтвердите авторизацию'
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
-        btn1 = types.KeyboardButton('Да')
-        btn2 = types.KeyboardButton('Нет')
-        markup.add(btn1, btn2)
-        mess = bot.send_message(message.chat.id, m, reply_markup=markup)
-        bot.register_next_step_handler(mess, auto)
-
-
-def auto(message):
-    if message.text == "Нет":
-        bot.send_message(message.chat.id, "Отменил! Введите команду для продолджения")
-        bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
-    else:
-        if message.text == "Да":
-            user.identity = str(message.from_user.id)
-            data = {"login": user.login, "password": user.password, "userIdentity": user.identity}
-            auto = requests.post(api + "auto", json=data)
-            if auto:
-                token_json = auto.json()
-                token = token_json['identityToken']
-                if token != None:
-                    m = "Ваш токен: " + token
-                    bot.send_message(message.chat.id, m)
-                if token_json['autoAnswerOption'] == 2:
-                    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
-                    btn1 = types.KeyboardButton('/verification')
-                    markup.add(btn1)
-                    m1 = 'Вы авторизованы! Если Ваш токен оканчивается на \"p\", Проверьте почту - вам пришло письмо ' \
-                         'с кодом подтверждения. Пройдите верификацию. '
-                    bot.send_message(message.chat.id, m1, reply_markup=markup)
-                if token_json['autoAnswerOption'] == 1:
-                    m2 = 'Неверный логин или пароль!'
-                    bot.send_message(message.chat.id, m2)
-
-
-
-@bot.message_handler(commands=['verification'])
-def verify(message):
-    m = "Введите ваш Пре-токен. Он онканчивается на \"p\""
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
-    btn1 = types.KeyboardButton('Отмена')
-    markup.add(btn1)
-    mess = bot.send_message(message.chat.id, m, reply_markup=markup)
-    bot.register_next_step_handler(mess, take_verify_token)
-
-
-def take_verify_token(message):
-    if message.text == "Отмена":
-        bot.send_message(message.chat.id, "Отменил! Введите команду для продолджения")
-        bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
-    else:
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
-        btn1 = types.KeyboardButton('Отмена')
-        markup.add(btn1)
-        verify.token = message.text
-        m = "Введите email-код"
-        mess = bot.send_message(message.chat.id, m, reply_markup=markup)
-        bot.register_next_step_handler(mess, take_verify_code)
-
-
-def take_verify_code(message):
-    if message.text == "Отмена":
-        bot.send_message(message.chat.id, "Отменил! Введите команду для продолджения")
-        bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
-    else:
-        verify.email_code = message.text
-        verify.user_identity = str(message.from_user.id)
-        data = {"emailAutoToken": verify.token, "emailCode": verify.email_code, "userIdentity": verify.user_identity}
-        verifi = requests.post(api + "verify", json=data)
-        token_json = verifi.json()
-        if verifi:
-            if token_json['verifyAnswerOption']:
-                token = token_json['token']
-                m = "Верификация прошла успешно! Ваш токен:" + str(token)
-                bot.send_message(message.chat.id, m)
-            else:
-                m = "Верификация провалилась! Проверьте правильность ввода!"
-                bot.send_message(message.chat.id, m)
-        else:
-            m = "Возможно, вы ввели что-то не то! Попробуйте заново!"
-            bot.send_message(message.chat.id, m)
 
 
 bot.polling(none_stop=True)
