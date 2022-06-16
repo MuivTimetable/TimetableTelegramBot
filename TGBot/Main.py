@@ -29,7 +29,13 @@ def autorization(message):
 
 def take_login(message):
     if message.text == "Отмена":
-        bot.send_message(message.chat.id, "Отменил! Введите команду для продолджения")
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+        btn1 = types.KeyboardButton('/token')
+        btn2 = types.KeyboardButton('/scheduler')
+        btn3 = types.KeyboardButton('/comment')
+        btn4 = types.KeyboardButton('/check_in')
+        markup.add(btn1, btn2, btn3, btn4)
+        bot.send_message(message.chat.id, "Отменил! Введите команду для продолджения", reply_markup=markup)
         bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
     else:
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
@@ -45,7 +51,13 @@ def take_login(message):
 
 def take_password(message):
     if message.text == "Отмена":
-        bot.send_message(message.chat.id, "Отменил! Введите команду для продолджения")
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+        btn1 = types.KeyboardButton('/token')
+        btn2 = types.KeyboardButton('/scheduler')
+        btn3 = types.KeyboardButton('/comment')
+        btn4 = types.KeyboardButton('/check_in')
+        markup.add(btn1, btn2, btn3, btn4)
+        bot.send_message(message.chat.id, "Отменил! Введите команду для продолджения", reply_markup=markup)
         bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
     else:
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
@@ -53,41 +65,38 @@ def take_password(message):
         markup.add(btn1)
         user.password = message.text
         bot.delete_message(message.chat.id, message.id)
-        m = 'Подтвердите авторизацию'
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
-        btn1 = types.KeyboardButton('Да')
-        btn2 = types.KeyboardButton('Нет')
-        markup.add(btn1, btn2)
-        mess = bot.send_message(message.chat.id, m, reply_markup=markup)
-        bot.register_next_step_handler(mess, auto)
+        user.identity = str(message.from_user.id)
+        data = {"login": user.login, "password": user.password, "userIdentity": user.identity}
+        auto = requests.post(api + "auto", json=data)
+        if auto:
+            token_json = auto.json()
+            token = token_json['identityToken']
+            user.token = token
+            if token != None:
+                m = "Авторизация завершена!"
+                markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+                btn2 = types.KeyboardButton('/scheduler')
+                btn3 = types.KeyboardButton('/comment')
+                btn4 = types.KeyboardButton('/check_in')
+                markup.add(btn2, btn3, btn4)
+                bot.send_message(message.chat.id, m, reply_markup=markup)
+            if token_json['autoAnswerOption'] == 2:
+                markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+                btn1 = types.KeyboardButton('/verification')
+                markup.add(btn1)
+                m1 = 'Вы авторизованы! Если вы впервые авторизируетесь с этого аккаунта, роверьте почту - вам пришло письмо ' \
+                             'с кодом подтверждения. Пройдите верификацию. '
+                bot.send_message(message.chat.id, m1, reply_markup=markup)
+            if token_json['autoAnswerOption'] == 1:
+                m2 = 'Неверный логин или пароль!'
+                markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+                btn1 = types.KeyboardButton('/token')
+                btn2 = types.KeyboardButton('/scheduler')
+                btn3 = types.KeyboardButton('/comment')
+                btn4 = types.KeyboardButton('/check_in')
+                markup.add(btn1, btn2, btn3, btn4)
+                bot.send_message(message.chat.id, m2, reply_markup=markup)
 
-
-def auto(message):
-    if message.text == "Нет":
-        bot.send_message(message.chat.id, "Отменил! Введите команду для продолджения")
-        bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
-    else:
-        if message.text == "Да":
-            user.identity = str(message.from_user.id)
-            data = {"login": user.login, "password": user.password, "userIdentity": user.identity}
-            auto = requests.post(api + "auto", json=data)
-            if auto:
-                token_json = auto.json()
-                token = token_json['identityToken']
-                user.token = token
-                if token != None:
-                    m = "Авторизация завершена!"
-                    bot.send_message(message.chat.id, m)
-                if token_json['autoAnswerOption'] == 2:
-                    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
-                    btn1 = types.KeyboardButton('/verification')
-                    markup.add(btn1)
-                    m1 = 'Вы авторизованы! Если вы впервые авторизируетесь с этого аккаунта, роверьте почту - вам пришло письмо ' \
-                         'с кодом подтверждения. Пройдите верификацию. '
-                    bot.send_message(message.chat.id, m1, reply_markup=markup)
-                if token_json['autoAnswerOption'] == 1:
-                    m2 = 'Неверный логин или пароль!'
-                    bot.send_message(message.chat.id, m2)
 
 class Verify():
     token = None
@@ -113,7 +122,13 @@ def verify(message):
 
 def take_verify_code(message):
     if message.text == "Отмена":
-        bot.send_message(message.chat.id, "Отменил! Введите команду для продолджения")
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+        btn1 = types.KeyboardButton('/token')
+        btn2 = types.KeyboardButton('/scheduler')
+        btn3 = types.KeyboardButton('/comment')
+        btn4 = types.KeyboardButton('/check_in')
+        markup.add(btn1, btn2, btn3, btn4)
+        bot.send_message(message.chat.id, "Отменил! Введите команду для продолджения", reply_markup=markup)
         bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
     else:
         verify.email_code = message.text
@@ -124,13 +139,25 @@ def take_verify_code(message):
         if verifi:
             if token_json['verifyAnswerOption']:
                 token = token_json['token']
-                m = "Верификация прошла успешно! Ваш токен:" + str(token)
-                bot.send_message(message.chat.id, m)
+                m = "Верификация прошла успешно!"
+                markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+                btn1 = types.KeyboardButton('/token')
+                btn2 = types.KeyboardButton('/scheduler')
+                btn3 = types.KeyboardButton('/comment')
+                btn4 = types.KeyboardButton('/check_in')
+                markup.add(btn1, btn2, btn3, btn4)
+                bot.send_message(message.chat.id, m, reply_markup=markup)
             else:
                 m = "Верификация провалилась! Проверьте правильность ввода!"
-                bot.send_message(message.chat.id, m)
+                markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+                btn2 = types.KeyboardButton('/scheduler')
+                btn3 = types.KeyboardButton('/comment')
+                btn4 = types.KeyboardButton('/check_in')
+                markup.add(btn2, btn3, btn4)
+                bot.send_message(message.chat.id, m, reply_markup=markup)
         else:
             m = "Возможно, вы ввели что-то не то! Попробуйте заново!"
+            btn1 = types.KeyboardButton("/verification")
             bot.send_message(message.chat.id, m)
 
 
@@ -279,9 +306,16 @@ def get_sched(message):
             sched = requests.post(api + "scheduler", json=data)
             sched_json = sched.json()
             print_schedluer(sched_json=sched_json, message=message)
-            bot.send_message(message.chat.id, "Что-то пошло не так! Проверьте логин")
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+            btn1 = types.KeyboardButton('/token')
+            btn2 = types.KeyboardButton('/scheduler')
+            btn3 = types.KeyboardButton('/comment')
+            btn4 = types.KeyboardButton('/check_in')
+            markup.add(btn1, btn2, btn3, btn4)
+            bot.send_message(message.chat.id, "Ваше расписание", reply_markup=markup)
             bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
         elif message.text == 'Расписание другой группы':
+            bot.send_message(message.chat.id, 'Вы выбрали расписание другой группы!', reply_markup=types.ReplyKeyboardRemove())
             markup = types.InlineKeyboardMarkup(row_width=1)
             btn1 = types.InlineKeyboardButton("5 курс", callback_data="2017")
             btn2 = types.InlineKeyboardButton("4 курс", callback_data="2018")
@@ -296,7 +330,14 @@ def get_sched(message):
             bot.send_message(message.chat.id, m)
             bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
     except:
-        bot.send_message(message.chat.id, "Что-то пошло не так! Пройдите авторизацию повторно")
+        markup = types.InlineKeyboardMarkup(row_width=1)
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+        btn1 = types.KeyboardButton('/token')
+        btn2 = types.KeyboardButton('/scheduler')
+        btn3 = types.KeyboardButton('/comment')
+        btn4 = types.KeyboardButton('/check_in')
+        markup.add(btn1, btn2, btn3, btn4)
+        bot.send_message(message.chat.id, "Что-то пошло не так! Пройдите авторизацию повторно", reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -382,7 +423,7 @@ def callback(call):
         elif call.data == 'УД-19':
             re_call(call, year=r'-19', group_name=r'УД')
         elif call.data == 'ЮД-19':
-            re_call(call, year=r'-19', group_name=r'УЗД')
+            re_call(call, year=r'-19', group_name=r'ЮД')
         elif call.data == 'СП-19':
             re_call(call, year=r'-19', group_name=r'СП')
         elif call.data == 'АЗ-19':
@@ -582,7 +623,7 @@ def callback(call):
         mess = call
         groups1(mess)
 
-# КОММЕНТ И ОТМЕТКУ ИНЛАЙН КНОПКАМИ!!!!!
+
 @bot.message_handler(commands=['comment'])
 def comment(message):
     m = "Введите комментарий"
@@ -595,7 +636,13 @@ def comment(message):
 
 def take_comment(message):
     if message.text == "Отмена":
-        bot.send_message(message.chat.id, "Отменил! Введите команду для продолджения")
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+        btn1 = types.KeyboardButton('/token')
+        btn2 = types.KeyboardButton('/scheduler')
+        btn3 = types.KeyboardButton('/comment')
+        btn4 = types.KeyboardButton('/check_in')
+        markup.add(btn1, btn2, btn3, btn4)
+        bot.send_message(message.chat.id, "Отменил! Введите команду для продолджения", reply_markup=markup)
         bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
     else:
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
@@ -610,7 +657,13 @@ def take_comment(message):
 def take_id_comm(message):
     try:
         if message.text == "Отмена":
-            bot.send_message(message.chat.id, "Отменил! Введите команду для продолджения")
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+            btn1 = types.KeyboardButton('/token')
+            btn2 = types.KeyboardButton('/scheduler')
+            btn3 = types.KeyboardButton('/comment')
+            btn4 = types.KeyboardButton('/check_in')
+            markup.add(btn1, btn2, btn3, btn4)
+            bot.send_message(message.chat.id, "Отменил! Введите команду для продолджения", reply_markup=markup)
             bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
         else:
             markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
@@ -638,12 +691,31 @@ def take_id_comm(message):
             if comm:
                 if comm_json["commentAnswerOption"]:
                     m = "Комментарий оставлен!"
-                    bot.send_message(message.chat.id, m)
+                    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+                    btn1 = types.KeyboardButton('/token')
+                    btn2 = types.KeyboardButton('/scheduler')
+                    btn3 = types.KeyboardButton('/comment')
+                    btn4 = types.KeyboardButton('/check_in')
+                    markup.add(btn1, btn2, btn3, btn4)
+                    bot.send_message(message.chat.id, m, reply_markup=markup)
                 if not comm_json["commentAnswerOption"]:
+                    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+                    btn1 = types.KeyboardButton('/token')
+                    btn2 = types.KeyboardButton('/scheduler')
+                    btn3 = types.KeyboardButton('/comment')
+                    btn4 = types.KeyboardButton('/check_in')
+                    markup.add(btn1, btn2, btn3, btn4)
                     m = comm_json['commentAnswerInfo']
-                    bot.send_message(message.chat.id, m)
+                    bot.send_message(message.chat.id, m, reply_markup=markup)
     except:
-        bot.send_message(message.chat.id, "Что-то пошло не так! Пройдите авторизацию повторно")
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+        btn1 = types.KeyboardButton('/token')
+        btn2 = types.KeyboardButton('/scheduler')
+        btn3 = types.KeyboardButton('/comment')
+        btn4 = types.KeyboardButton('/check_in')
+        markup.add(btn1, btn2, btn3, btn4)
+        bot.send_message(message.chat.id, "Что-то пошло не так! Пройдите авторизацию повторно", reply_markup=markup)
+
 
 
 @bot.message_handler(commands=['check_in'])
@@ -658,7 +730,13 @@ def Totalizer(message):
 
 def take_id_total(message):
     if message.text == "Отмена":
-        bot.send_message(message.chat.id, "Отменил! Введите команду для продолджения")
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+        btn1 = types.KeyboardButton('/token')
+        btn2 = types.KeyboardButton('/scheduler')
+        btn3 = types.KeyboardButton('/comment')
+        btn4 = types.KeyboardButton('/check_in')
+        markup.add(btn1, btn2, btn3, btn4)
+        bot.send_message(message.chat.id, "Отменил! Введите команду для продолджения", reply_markup=markup)
         bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
     else:
         try:
@@ -677,11 +755,24 @@ def take_id_total(message):
             mess = bot.send_message(message.chat.id, m, parse_mode='html', reply_markup=markup)
             bot.register_next_step_handler(mess, totalize)
         except:
-            bot.send_message(message.chat.id,  "Что-то пошло не так! Пройдите авторизацию повторно")
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+            btn1 = types.KeyboardButton('/token')
+            btn2 = types.KeyboardButton('/scheduler')
+            btn3 = types.KeyboardButton('/comment')
+            btn4 = types.KeyboardButton('/check_in')
+            markup.add(btn1, btn2, btn3, btn4)
+            bot.send_message(message.chat.id,  "Что-то пошло не так! Пройдите авторизацию повторно", reply_markup=markup)
+
 
 def totalize(message):
     if message.text == "Отмена":
-        bot.send_message(message.chat.id, "Отменил! Введите команду для продолджения")
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+        btn1 = types.KeyboardButton('/token')
+        btn2 = types.KeyboardButton('/scheduler')
+        btn3 = types.KeyboardButton('/comment')
+        btn4 = types.KeyboardButton('/check_in')
+        markup.add(btn1, btn2, btn3, btn4)
+        bot.send_message(message.chat.id, "Отменил! Введите команду для продолджения", reply_markup=markup)
         bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
     else:
         if message.text == "Приду":
@@ -692,11 +783,23 @@ def totalize(message):
         totalizer = requests.post(api + "totalizer", json=data)
         totalizer_json = totalizer.json()
         if totalizer_json['totalizerAnswerOption']:
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+            btn1 = types.KeyboardButton('/token')
+            btn2 = types.KeyboardButton('/scheduler')
+            btn3 = types.KeyboardButton('/comment')
+            btn4 = types.KeyboardButton('/check_in')
+            markup.add(btn1, btn2, btn3, btn4)
             m = "Принято, отмечаю"
-            bot.send_message(message.chat.id, m)
+            bot.send_message(message.chat.id, m, reply_markup=markup)
         else:
             m = totalizer_json['totalizerAnswerInfo']
-            bot.send_message(message.chat.id, m)
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+            btn1 = types.KeyboardButton('/token')
+            btn2 = types.KeyboardButton('/scheduler')
+            btn3 = types.KeyboardButton('/comment')
+            btn4 = types.KeyboardButton('/check_in')
+            markup.add(btn1, btn2, btn3, btn4)
+            bot.send_message(message.chat.id, m, reply_markup=markup)
 
 
 
