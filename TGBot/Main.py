@@ -9,7 +9,7 @@ token = '5309566375:AAH0VgTM1-d8e0FQOlUZlUZIafRwSmxn1Nc'
 bot = telebot.TeleBot(token)
 
 
-mailing_file = open('venv\\user_id.txt', 'r')
+mailing_file = open('user_id.txt', 'r')
 joined_user = set()
 for line in mailing_file:
     joined_user.add(line.strip())
@@ -294,7 +294,7 @@ def start(message):
     markup.add(btn1, btn2, btn3, btn4)
     bot.send_message(message.chat.id, mess, parse_mode='html', reply_markup=markup)
     if not str(message.chat.id) in joined_user:
-        mailing_file = open('venv\\user_id.txt', 'a')
+        mailing_file = open('user_id.txt', 'a')
         mailing_file.write(str(message.chat.id) + '\n')
         joined_user.add(message.chat.id)
         mailing_file.close()
@@ -683,20 +683,6 @@ def take_id_comm(message):
             btn1 = types.KeyboardButton('Отмена')
             markup.add(btn1)
             comment.token = user.token
-            # data = {"token": comment.token, "group_id": None}
-            # sched = requests.post(api + "scheduler", json=data)
-            # sched_json = sched.json()
-            # a = 0
-            # days_leigth = len(sched_json['timetables'])
-            # while a < days_leigth:
-            #     sched = sched_json['timetables'][a]["schedulers"]
-            #     leight = len(sched_json['timetables'][a]["schedulers"])
-            #     a += 1
-            #     i = 0
-            #     if (message.text == sched_json['timetables'][a]["schedulers"][i]['area']):
-            #         while i < leight:
-            #             comm_id = (sched[i]["scheduler_id"])
-            # comment.id = comm_id
             comment.id = message.text
             data = {"comment": comment.comm, "scheduler_id": comment.id, "token": comment.token}
             comm = requests.post(api + "comment", json=data)
