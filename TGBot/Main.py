@@ -8,6 +8,7 @@ import re
 token = '5309566375:AAH0VgTM1-d8e0FQOlUZlUZIafRwSmxn1Nc'
 bot = telebot.TeleBot(token)
 
+
 mailing_file = open('venv\\user_id.txt', 'r')
 joined_user = set()
 for line in mailing_file:
