@@ -4,8 +4,15 @@ from telebot import types
 import requests
 import re
 
+
 token = '5309566375:AAH0VgTM1-d8e0FQOlUZlUZIafRwSmxn1Nc'
 bot = telebot.TeleBot(token)
+
+mailing_file = open('venv\\user_id.txt', 'r')
+joined_user = set()
+for line in mailing_file:
+    joined_user.add(line.strip())
+mailing_file.close()
 
 
 class User:
@@ -285,6 +292,11 @@ def start(message):
     btn4 = types.KeyboardButton('/check_in')
     markup.add(btn1, btn2, btn3, btn4)
     bot.send_message(message.chat.id, mess, parse_mode='html', reply_markup=markup)
+    if not str(message.chat.id) in joined_user:
+        mailing_file = open('venv\\user_id.txt', 'a')
+        mailing_file.write(str(message.chat.id) + '\n')
+        joined_user.add(message.chat.id)
+        mailing_file.close()
 
 
 @bot.message_handler(commands=['scheduler'])
@@ -802,7 +814,10 @@ def totalize(message):
             bot.send_message(message.chat.id, m, reply_markup=markup)
 
 
-
+@bot.message_handler(commands=['mailing'])
+def mailing1(message):
+    for user in joined_user:
+        bot.send_message(user, message.text[message.text.find(' '):])
 
 
 
